@@ -1,0 +1,11 @@
+aiogram==3.4.1
+APScheduler==3.10.4
+SQLAlchemy==2.0.23
+aiosqlite==0.19.0
+cryptography==41.0.7
+pydantic==1.10.13
+fastapi==0.104.1
+uvicorn==0.23.2
+python-dotenv==1.0.0
+pytest==7.4.2
+pytest-asyncio==0.21.1
