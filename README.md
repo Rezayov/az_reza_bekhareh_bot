@@ -1,46 +1,72 @@
-# «از رضا بخر» — بازارچهٔ کُد غذا
+# “Buy from Reza” — Food Code Marketplace
 
-این مخزن شامل ربات تلگرامی «از رضا بخر» است که با پایتون ۳ و کتابخانهٔ [aiogram v3](https://docs.aiogram.dev/) پیاده‌سازی شده. فلسفهٔ ربات ساده است: «تو می‌تونی غذا رو از رضا بخری»؛ کاربران می‌توانند کُد غذای خود را بفروشند یا کدهای دیگران را خریداری کنند و تمام فرایند ثبت‌نام، رزرو، پرداخت، تأیید ادمین و امتیازدهی را درون تلگرام انجام دهند.
+This repository contains the **“Buy from Reza”** Telegram bot implemented in **Python 3** using **aiogram v3**.
+The philosophy of the bot is simple: *“You can buy food from Reza.”* Users can sell their food codes or purchase codes from others, and the entire flow — registration, reservation, payment, admin approval, and rating — happens inside Telegram.
 
-## قابلیت‌ها
-- ثبت‌نام سریع کاربران با شناسهٔ تلگرام، ایمیل اختیاری و تأیید ساختگی OTP.
-- مدیریت آگهی‌های فروش کُد غذا با رمزنگاری Fernet و نمایش امن masked code.
-- رزرو، آپلود رسید پرداخت، صف بررسی ادمین و تحویل خودکار کُد پس از تأیید.
-- محدودیت رزرو همزمان، محدودیت آگهی فعال روزانه و میان‌بری برای حساب‌های فروشنده.
-- امتیازدهی دوطرفه، مدیریت اختلاف‌ها و گزارش‌گیری روزانه.
-- پنل کامل ادمین داخل تلگرام برای تأیید پرداخت، تغییر تنظیمات، بن/آن‌بن کاربران و مشاهدهٔ آمار.
-- زمان‌بندی با APScheduler برای انقضای رزروها، آگهی‌ها و هشدار نزدیک انقضا.
+---
 
-## پیش‌نیازها
-- Python 3.11+
-- SQLite (پیش‌فرض) یا هر دیتابیس سازگار با SQLAlchemy (قابل تنظیم)
-- حساب تلگرام و توکن بات از [@BotFather](https://t.me/BotFather)
+## Features
 
-## راه‌اندازی سریع (Polling)
-1. مخزن را کلون کن و وارد پوشه شو.
-2. یک virtualenv بساز و فعال کن:
+* Fast user registration via Telegram ID, optional email, and a mock OTP confirmation.
+* Management of food-code sale listings with **Fernet encryption** and secure masked display.
+* Reservation, payment receipt upload, admin review queue, and automatic code delivery after approval.
+* Limits on concurrent reservations, daily active listings, and shortcuts for seller accounts.
+* Two-way rating, dispute management, and daily reporting.
+* Full in-Telegram admin panel for payment approval, settings management, ban/unban, and statistics.
+* APScheduler-based timers for reservation expiry, listing expiration, and near-expiry warnings.
+
+---
+
+## Requirements
+
+* Python 3.11+
+* SQLite (default) or any SQLAlchemy-compatible database (configurable)
+* Telegram account and bot token from [@BotFather](https://t.me/BotFather)
+
+---
+
+## Quick Start (Polling)
+
+1. Clone the repository and enter the directory.
+
+2. Create and activate a virtual environment:
+
    ```bash
    python -m venv .venv
    source .venv/bin/activate
    ```
-3. وابستگی‌ها را نصب کن:
+
+3. Install dependencies:
+
    ```bash
    pip install -r requirements.txt
    ```
-4. فایل `.env` را بر اساس `.env.example` بساز. برای تولید کلید Fernet از دستور زیر استفاده کن:
+
+4. Create `.env` based on `.env.example`.
+   To generate a Fernet key:
+
    ```bash
    python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
    ```
-   مقدار خروجی را در متغیر `FERNET_KEY` قرار بده.
-5. اسکریپت اصلی را اجرا کن:
+
+   Put the output into the `FERNET_KEY` variable.
+
+5. Run the application:
+
    ```bash
    python -m az_reza_bekhareh_bot.app
    ```
-   با اجرای فایل، ربات به صورت Polling بالا می‌آید و بات آمادهٔ کار است.
 
-## راه‌اندازی Webhook با FastAPI (اختیاری)
-1. در `.env` مقدار `WEBHOOK_URL` را روی آدرس HTTPS عمومی خود قرار بده.
-2. داخل اپلیکیشن پایتون از تابع `create_fastapi_app` استفاده کن و با uvicorn اجرا کن:
+The bot will start in polling mode and become operational.
+
+---
+
+## Webhook Setup with FastAPI (Optional)
+
+1. Set `WEBHOOK_URL` in `.env` to your public HTTPS address.
+
+2. Inside your Python app use `create_fastapi_app` and run with uvicorn:
+
    ```python
    from az_reza_bekhareh_bot.app import build_dispatcher, create_fastapi_app
    from aiogram import Bot
@@ -51,63 +77,91 @@
    dp = build_dispatcher()
    app = create_fastapi_app(bot, dp)
    ```
-   سپس:
+
+   Then run:
+
    ```bash
    uvicorn my_module:app --host 0.0.0.0 --port 8080
    ```
-3. در صورت نیاز، مسیر `/webhook` را در تنظیمات بات به BotFather اعلام کن.
 
-## معماری و ماژول‌ها
+3. If necessary, register the `/webhook` path via BotFather.
+
+---
+
+## Architecture & Modules
+
 ```
 az_reza_bekhareh_bot/
-├─ app.py                # نقطهٔ ورود برنامه، ساخت Dispatcher، Scheduler و راه‌اندازی Polling/Webhook
-├─ config.py             # مدیریت تنظیمات با Pydantic و خواندن از ENV
-├─ crypto.py             # رمزنگاری Fernet برای کُدهای غذا
-├─ db.py                 # اتصال Async SQLite و Session manager
-├─ models.py             # مدل‌های SQLAlchemy و ایندکس‌ها
+├─ app.py                # entry point, builds Dispatcher & Scheduler, starts Polling/Webhook
+├─ config.py             # settings management via Pydantic + ENV
+├─ crypto.py             # Fernet encryption for food codes
+├─ db.py                 # async SQLite connection & session manager
+├─ models.py             # SQLAlchemy models and indexes
 ├─ middlewares/
-│  └─ throttling.py      # محدودسازی نرخ پیام کاربران
-├─ keyboards/            # کیبوردهای Inline و Reply
-├─ handlers/             # هندلرهای دستورات و فلوهای FSM
-├─ services/             # لایهٔ سرویس برای منطق رزرو، پرداخت، گزارش و ...
-├─ scheduler/            # جاب‌های زمان‌بندی شده برای انقضا و هشدار
-├─ messages/fa.py        # تمام پیام‌ها و متن‌های فارسی برندسازی شده
-├─ tests/                # تست‌های واحد و جریان کامل با pytest-asyncio
-├─ requirements.txt      # وابستگی‌های پروژه
-└─ .env.example          # نمونهٔ تنظیمات محیطی
+│  └─ throttling.py      # user rate limiting
+├─ keyboards/            # Inline and Reply keyboards
+├─ handlers/             # command handlers and FSM flows
+├─ services/             # business logic: reservation, payment, reporting, etc.
+├─ scheduler/            # scheduled jobs for expiration & alerts
+├─ messages/fa.py        # branded Persian messages
+├─ tests/                # unit & flow tests using pytest-asyncio
+├─ requirements.txt
+└─ .env.example
 ```
 
-## نقش‌ها
-- **کاربر عادی**: ثبت‌نام، فروش، خرید، رزرو، آپلود رسید، امتیازدهی، ثبت اختلاف.
-- **حساب فروشنده (seller_account)**: مشابه کاربر عادی اما با رصد ویژه در گزارش‌ها.
-- **ادمین**: دسترسی به /admin و دستورات مدیریتی (`/ban`, `/unban`, `/set_ttl`, ...).
+---
 
-## قوانین و حریم خصوصی
-- انتقال کُد ممکن است خلاف مقررات دانشگاه باشد؛ مسئولیت کامل با کاربر است.
-- اطلاعات ذخیره‌شده فقط شامل شناسهٔ تلگرام، نام، دانشگاه، ایمیل اختیاری، آگهی‌ها و تراکنش‌هاست.
-- کُدهای غذا با Fernet رمزگذاری می‌شوند و فقط پس از تأیید ادمین به خریدار نمایش داده می‌شوند.
-- هیچ‌گاه به سامانهٔ دانشگاه لاگین نمی‌کنیم و رمز/کوکی درخواست نمی‌شود.
+## Roles
 
-## تست‌ها
-برای اجرای تست‌ها:
+* **Regular user**: register, sell, buy, reserve, upload receipt, rate, open disputes.
+* **Seller account (`seller_account`)**: similar to regular users but specially tracked in reports.
+* **Admin**: access to `/admin` and management commands (`/ban`, `/unban`, `/set_ttl`, ...).
+
+---
+
+## Rules & Privacy
+
+* Transferring codes may violate university regulations; responsibility lies entirely with the user.
+* Stored data includes Telegram ID, name, university, optional email, listings, and transactions.
+* Food codes are encrypted with Fernet and shown to buyers **only after admin approval**.
+* The system never logs into any university portal and never asks for passwords or cookies.
+
+---
+
+## Tests
+
+Run:
+
 ```bash
 pytest
 ```
-تست‌ها شامل موارد زیرند:
-- اطمینان از رمزنگاری صحیح کُدها و جلوگیری از رزروهای موازی.
-- فلو کامل فروش → رزرو → پرداخت → تأیید → امتیاز.
-- مدیریت انقضای رزرو و سناریوی رد پرداخت.
-- سرویس‌های سطح پایین مانند آمار، اختلاف، و محدودیت‌ها.
 
-## مقیاس‌پذیری و حساب‌های فروش متعدد
-- مدل `users` دارای فیلد `is_seller_account` است تا حساب‌های فروشندهٔ متعدد بدون هاردکد مدیریت شوند.
-- گزارش‌های روزانه در `report_service` فروش به تفکیک `seller_id` را فراهم می‌کنند؛ می‌توان برای مانیتورینگ خارجی روشن کرد.
-- برای مهاجرت به PostgreSQL یا دیتابیس‌های دیگر، کافی است `DATABASE_URL` را تغییر دهی؛ SQLAlchemy و aiosqlite جایگزین‌پذیر هستند.
-- Scheduler مستقل از Polling است و می‌تواند روی workers جداگانه اجرا شود.
+Test coverage includes:
 
-## اسکریپت اجرا
-- اجرای عادی: `python -m az_reza_bekhareh_bot.app`
-- اجرای وبهوک: `uvicorn your_module:app --host 0.0.0.0 --port 8080`
+* correct encryption and prevention of parallel reservations
+* full flow: sell → reserve → pay → approve → rate
+* reservation expiry and rejected payment scenarios
+* lower-level services like statistics, disputes, and limits
 
-## مجوز
-این پروژه صرفاً برای اهداف آموزشی طراحی شده و مسئولیت استفادهٔ واقعی با کاربر است.
+---
+
+## Scalability & Multiple Seller Accounts
+
+* The `users` model includes `is_seller_account` so multiple sellers can be managed without hardcoding.
+* Daily reports in `report_service` provide per-seller sales; external monitoring can be attached.
+* Migrating to PostgreSQL or others only requires changing `DATABASE_URL`; SQLAlchemy handles the rest.
+* The scheduler is independent from polling and can run on separate workers.
+
+---
+
+## Run Commands
+
+* Normal: `python -m az_reza_bekhareh_bot.app`
+* Webhook: `uvicorn your_module:app --host 0.0.0.0 --port 8080`
+
+---
+
+## License
+
+This project is intended for educational purposes. Responsibility for real-world usage lies with the user.
+
